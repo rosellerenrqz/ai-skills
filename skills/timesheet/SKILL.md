@@ -74,7 +74,12 @@ Rules:
    - **Exclude from extraction:** session startup messages, CLI upgrade notices, tool invocations (including invoking the timesheet skill itself), system reminders, meta-conversation about Claude or its tools, and any infrastructure noise that is not actual work the user performed.
 5. From the extracted work, produce:
    - A short, plain-language **session title** (max 8 words).
-   - A numbered list of **notes** — one item per distinct completed task, plain English, past tense, with the "why" or outcome included where it adds clarity (e.g. `Fixed dynamic loading for committed variants — variants were not loading due to casing and path issues.`). **Produce a minimum of 5 notes when the conversation contains sufficient work.** Do not over-consolidate — if 8 distinct things were done, write 8 notes, not 3 broad ones. If the conversation genuinely contains fewer than 5 distinct work items, write only what is real and do not pad.
+   - A numbered list of **notes** — one item per distinct completed task, written as simple plain-English sentences a non-technical person could understand. Past tense. Include the outcome or reason where it adds clarity. **Do not include file names, function names, variable names, code identifiers, file paths, or technical syntax of any kind.** Describe what was done and why in plain terms — not how it was done at the code level.
+     - Bad: `Fixed the lookahead in sanitizeJsonStrings to also skip \n and \r`
+     - Good: `Fixed a bug where the JSON parser misread certain line breaks, causing valid responses to be rejected.`
+     - Bad: `Added a table object type to blogBlockContent.ts with rows array and a preview`
+     - Good: `Added proper table support to the content schema so tables are recognized as valid content blocks.`
+     - **Produce a minimum of 5 notes when the conversation contains sufficient work.** Do not over-consolidate — if 8 distinct things were done, write 8 notes, not 3 broad ones. If the conversation genuinely contains fewer than 5 distinct work items, write only what is real and do not pad.
 6. Append the new session block to the end of `docs/timesheets/{date}.md`.
 7. Re-derive the **global day title** from all tasks and notes in the file (existing sessions + the one just appended). Rewrite only the first line of the file to reflect the updated title. Do not touch anything else.
 8. In `TIMESHEETS.md`: if a row for `{date}` already exists, update only `Sessions`, `Day Title`, and `Last Session Title` on that row — leave every other row and every other column on that row unchanged. If no row exists for `{date}`, append a new row.

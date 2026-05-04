@@ -10,7 +10,7 @@ Install any skill with one command — no config, no setup.
 
 | Skill       | Version | Description                                                            | Docs |
 | ----------- | ------- | ---------------------------------------------------------------------- | ---- |
-| `timesheet` | 1.0.0   | Log daily work sessions by task — no time tracking, just clear records | [README](skills/timesheet/README.md) |
+| `timesheet` | 1.1.0   | Log daily work sessions by task — no time tracking, just clear records | [README](skills/timesheet/README.md) |
 
 ---
 

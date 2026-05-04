@@ -169,4 +169,4 @@ Notes within each session are a numbered list — one item per distinct thing do
 
 ## Version
 
-`1.0.0` — see [CHANGELOG](../../CHANGELOG.md)
+`1.1.0` — see [CHANGELOG](../../CHANGELOG.md)
