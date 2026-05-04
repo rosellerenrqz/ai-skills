@@ -1,0 +1,17 @@
+{
+  "schemaVersion": "1",
+  "name": "ai-skills",
+  "version": "1.0.0",
+  "description": "A growing collection of reusable AI skills for Claude Code and other agents.",
+  "author": "rosellerenrqz",
+  "repository": "https://github.com/rosellerenrqz/ai-skills",
+  "keywords": ["claude", "skills", "productivity", "timesheet"],
+  "skills": [
+    {
+      "name": "timesheet",
+      "version": "1.0.0",
+      "path": "skills/timesheet",
+      "description": "Log daily work sessions by task — no time tracking, just clear records."
+    }
+  ]
+}
