@@ -8,9 +8,10 @@ Install any skill with one command — no config, no setup.
 
 ## Available Skills
 
-| Skill       | Version | Description                                                            | Docs |
-| ----------- | ------- | ---------------------------------------------------------------------- | ---- |
-| `timesheet` | 1.2.0   | Log daily work sessions by task — no time tracking, just clear records | [README](skills/timesheet/README.md) |
+| Skill         | Version | Description                                                            | Docs |
+| ------------- | ------- | ---------------------------------------------------------------------- | ---- |
+| `timesheet`   | 1.2.0   | Log daily work sessions by task — no time tracking, just clear records | [README](skills/timesheet/README.md) |
+| `git-message` | 1.3.0   | Suggest a conventional-commit message (and branch name) from staged changes — read-only | [README](skills/git-message/README.md) |
 
 ---
 
@@ -71,6 +72,9 @@ Once installed, use the skill in Claude Code:
 /timesheet view 05-04-2026                             — view all sessions for a date
 /timesheet summary 05-04-2026                          — generate end-of-day summary
 /timesheet auto 05-04-2026                             — log + summarize in one step
+
+/git-message                                           — suggest a commit message from staged changes
+/git-message -branch                                   — suggest a commit message + branch name
 ```
 
 ---
@@ -80,9 +84,12 @@ Once installed, use the skill in Claude Code:
 ```
 ai-skills/
 └── skills/
-    └── timesheet/
-        ├── SKILL.md      — skill definition and instructions (read by the agent)
-        └── README.md     — human-facing docs: commands, examples, output format
+    ├── timesheet/
+    │   ├── SKILL.md      — skill definition and instructions (read by the agent)
+    │   └── README.md     — human-facing docs: commands, examples, output format
+    └── git-message/
+        ├── SKILL.md
+        └── README.md
 ```
 
 Each skill is a folder with both files. Adding a new skill = adding a new folder with both.

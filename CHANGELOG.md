@@ -6,6 +6,16 @@ Follows [semantic versioning](https://semver.org/): MAJOR.MINOR.PATCH
 
 ---
 
+## [1.3.0] — 2026-06-30
+
+### Added — `git-message`
+- New skill. `/git-message` suggests a conventional-commit message from staged changes (`git diff --cached`), choosing the commit type and scope from the actual diff. `/git-message -branch` also suggests a `{type}/{kebab-summary}` branch name and, when you're on the default branch, shows the `git switch -c` command to move the work onto its own branch.
+- **Read-only by design** — runs only inspection commands (`git status`, `git diff`, `git branch`, `git log`) and prints suggestions to copy. It never runs `git commit`, `git checkout`, `git add`, or any state-changing command.
+- Messages omit `Co-Authored-By` / `Generated with Claude Code` trailers. Subject lines are imperative, ≤ 72 chars, with a body only when the change needs explaining.
+- When nothing is staged, it offers to base the suggestion on unstaged changes instead of guessing silently.
+
+---
+
 ## [1.2.0] — 2026-06-30
 
 ### Added — `timesheet`
