@@ -13,6 +13,7 @@ Records what you worked on in a session. Task-based only — no time tracking, n
 - **Global day title is the one exception.** The first line of `docs/timesheets/{date}.md` is `# {date} — {global day title}`. This line is rewritten every time a new session is added so it always reflects all sessions for that day. Only this line changes — everything below it is untouched.
 - **Append-only on the index.** `TIMESHEETS.md` rows for dates that already exist must not be rewritten. Only the `Sessions` count, `Day Title`, and `Last Session Title` columns on that date's row may change — all other existing row content stays exactly as written.
 - A date with N existing sessions always produces session N+1 as the next entry. Count by reading the file; do not assume.
+- **`-time` and `-clean` are the only commands allowed to alter content below the day title.** `-time` writes managed time-estimate lines (idempotent — re-running replaces them, never stacks). `-clean` removes commit-recommendation content that should never have been logged. No other command may touch a written `## Session` block.
 - **Extract work from the current conversation.** Do not ask the user what they worked on. Read the conversation history and extract completed work items from it — what was built, fixed, changed, debugged, analyzed, or discussed. Do not infer from file diffs or code changes that were not part of the conversation.
 - Do not track time or durations. This skill is task-based only.
 - Session titles must use plain language. Avoid technical jargon, acronyms, or internal IDs in titles.
@@ -50,6 +51,8 @@ Rules:
 /timesheet summary {date}
 /timesheet auto {date}
 /timesheet auto {date} {optional: extra context}
+/timesheet -time {file}
+/timesheet -clean {file}
 ```
 
 ## Argument Handling
@@ -60,6 +63,8 @@ Rules:
 - `view {date}` — displays all sessions for that date without writing anything.
 - `summary {date}` — generates a short end-of-day summary from all sessions on that date.
 - `auto {date}` — logs the current session then immediately runs summary.
+- `-time {file}` — estimates and writes work-time per session and a day total onto an existing timesheet file. `{file}` accepts a full path (e.g. `docs/timesheets/2026-06-30.md`) **or** a date in any accepted format, which resolves to `docs/timesheets/{date}.md`. If omitted, use today's file. Reads and writes only — does not extract from the conversation.
+- `-clean {file}` — removes git commit-recommendation content that was accidentally captured into a timesheet file's notes. Same `{file}` resolution as `-time`. Reads and writes only.
 
 ## Workflow
 
@@ -72,6 +77,7 @@ Rules:
    - **If the conversation contains meaningful work context**, extract it and proceed without prompting the user.
    - **If the conversation is sparse or only contains the `/timesheet` invocation itself** (i.e., this skill was called in a fresh or unrelated conversation), do not fabricate notes. Instead, tell the user: *"I don't see enough work context in this conversation to log a session. Describe what you worked on and I'll log it — or invoke `/timesheet` at the end of the conversation where the work happened."* Then wait for their response before proceeding.
    - **Exclude from extraction:** session startup messages, CLI upgrade notices, tool invocations (including invoking the timesheet skill itself), system reminders, meta-conversation about Claude or its tools, and any infrastructure noise that is not actual work the user performed.
+   - **Never log git commit recommendations as work.** If the conversation contains a commit message Claude proposed (e.g. the user asked "what's the best commit message for these changes?"), the proposed commit text — conventional-commit subject lines like `feat(...)`/`fix:`, commit bodies, and `Co-Authored-By:` / `🤖 Generated with Claude Code` trailers — is **not** a work item. Log the underlying work that the commit describes if it isn't already captured, but never copy the commit message itself into the notes. (If it slips through, `/timesheet -clean {file}` removes it.)
 5. From the extracted work, produce:
    - A short, plain-language **session title** (max 8 words).
    - A numbered list of **notes** — one item per distinct completed task, written as simple plain-English sentences a non-technical person could understand. Past tense. Include the outcome or reason where it adds clarity. **Do not include file names, function names, variable names, code identifiers, file paths, or technical syntax of any kind.** Describe what was done and why in plain terms — not how it was done at the code level.
@@ -105,6 +111,46 @@ Run in sequence:
 1. `/timesheet {date}` — extract work from the conversation and log the session.
 2. `/timesheet summary {date}` — generate the end-of-day summary.
 
+### `/timesheet -time {file}` — Estimate and write work time
+
+Adds an estimated number of hours to each session and a day total, derived from the complexity of the notes already in the file. **This is the only place the skill records time** — the default logging flow remains time-free.
+
+1. Resolve `{file}` (see Argument Handling). If it does not exist, report `No timesheet file found for {file}.` and stop.
+2. Read the file and split it into its `## Session` blocks.
+3. **Classify every note** into one complexity tier and assign its base hours:
+   - **Light — 1 hr:** small, contained changes — copy/text tweaks, config value changes, simple display fixes, renaming, clearing test data, committing or moving existing work.
+   - **Standard — 2.5 hrs:** a feature or non-trivial change — adding a feature, schema additions, building a workflow, a fix that required investigation.
+   - **Heavy — 4 hrs:** hard or broad work — debugging an elusive bug, integration work, architecture/design decisions, cross-cutting refactors, or analysis/research spanning the system.
+   - When a note is ambiguous between two tiers, choose the lower one.
+4. **Raw session hours** = sum of the base hours of that session's notes. **Raw day total** = sum of all sessions.
+5. **Apply the minimum (day-level floor):** the minimum applies to the *day total*, not per session.
+   - If raw day total ≥ 8: keep the raw numbers.
+   - If raw day total < 8: scale every session's hours by `8 / raw day total` so the day total becomes exactly 8 hrs.
+6. **Round** each session's hours to the nearest 0.5. If rounding makes the session hours no longer sum to the day total, adjust the single largest session up or down so they reconcile exactly.
+7. **Write the estimates (idempotent, managed regions):**
+   - Insert or replace a day-total line directly under the title line:
+     `**Estimated time:** {day total} hrs _(based on note complexity, minimum 8 hrs/day)_`
+   - At the end of each session block — after the last note, before the trailing `---` — insert or replace a line: `_Estimated: {h} hrs_`
+   - Re-running `-time` **replaces** these managed lines; it never stacks them and never alters the notes, titles, or session ordering.
+8. Confirm to the user with the per-session hours and the day total.
+
+### `/timesheet -clean {file}` — Remove leaked commit-recommendation content
+
+Removes git commit-message recommendations that were accidentally captured into the notes (e.g. when the user asked Claude for a commit message in the same conversation that was later logged).
+
+1. Resolve `{file}` (see Argument Handling). If it does not exist, report `No timesheet file found for {file}.` and stop.
+2. Scan every session's notes and remove any note (or fenced block inside a note) that is git commit-recommendation content, identified by any of:
+   - A conventional-commit subject line — e.g. `feat(...)`, `fix:`, `chore:`, `refactor:`, `docs:`, `test:`, `build:`, `perf:`, `style:`, `ci:`, with or without a scope.
+   - A commit body or bullet list that is clearly describing a commit message rather than work performed (often introduced by phrasing like "recommended commit message", "commit message:", or shown in a code fence).
+   - Trailer lines: `Co-Authored-By: ...` and `🤖 Generated with [Claude Code](...)` / `Generated with Claude Code`.
+   - Be conservative: a normal plain-English work note that merely *mentions* committing (e.g. "Committed the new variants to the client site") is **legitimate work — keep it.** Only remove content that is itself a proposed commit message.
+3. **Renumber** the remaining notes in each affected session so the list stays sequential starting at 1.
+4. If a session's notes become empty after cleaning, leave the session heading in place with a single note: `1. (no work items — entry cleaned).` Do not delete session blocks.
+5. **Re-derive the global day title** from the cleaned notes and rewrite only the title line (per the Global Day Title rules).
+6. In `TIMESHEETS.md`, if the day title or last session title changed, update only those columns on that date's row. Do not change `Sessions` or any other row.
+7. If `-time` estimates exist in the file, note that they are now stale and suggest re-running `/timesheet -time {file}`. Do not recompute them automatically.
+8. Confirm to the user what was removed (count and which sessions), or report `Nothing to clean — no commit-recommendation content found.`
+
 ## File Format
 
 ### `docs/timesheets/{date}.md`
@@ -131,6 +177,39 @@ Run in sequence:
 ```
 
 The first line (`# {date} — {global day title}`) is the only line that is rewritten on each new session. All `## Session` blocks below it are permanent.
+
+### With `-time` estimates applied
+
+After `/timesheet -time {file}` runs, the file carries managed time lines (day total under the title, per-session estimate before each `---`):
+
+```markdown
+# {date} — {global day title}
+
+**Estimated time:** 8 hrs _(based on note complexity, minimum 8 hrs/day)_
+
+## Session 1 — {title}
+
+### Notes
+
+1. {what was done and why}
+2. {what was done and why}
+
+_Estimated: 5 hrs_
+
+---
+
+## Session 2 — {title}
+
+### Notes
+
+1. {what was done and why}
+
+_Estimated: 3 hrs_
+
+---
+```
+
+These time lines are the only managed regions besides the day title. Re-running `-time` replaces them in place.
 
 ### Session block to append
 
@@ -197,4 +276,6 @@ Day title:     {global day title}
 Next: /timesheet summary {date}   — generate end-of-day summary
   or: /timesheet view {date}      — review all sessions
   or: /timesheet auto {date}      — log + summarize in one step
+  or: /timesheet -time {date}     — add estimated hours per session + day total
+  or: /timesheet -clean {date}    — strip any leaked commit-recommendation text
 ```

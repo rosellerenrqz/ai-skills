@@ -6,6 +6,18 @@ Follows [semantic versioning](https://semver.org/): MAJOR.MINOR.PATCH
 
 ---
 
+## [1.2.0] — 2026-06-30
+
+### Added — `timesheet`
+- `/timesheet -time {file}` — estimates work hours from note complexity and writes a per-session estimate plus a day total. Three complexity tiers (light/standard/heavy), summed per session, floored to a minimum of 8 hrs for the day total, rounded to the nearest half hour. Idempotent — managed time lines are replaced in place on re-run. This is the only command that records time; default logging stays time-free.
+- `/timesheet -clean {file}` — removes git commit-recommendation content (conventional-commit subject lines, commit bodies, `Co-Authored-By` / `Generated with Claude Code` trailers) that was accidentally captured into session notes, then renumbers remaining notes and re-derives the day title. Legitimate work notes that merely mention committing are preserved.
+- `{file}` argument for both commands accepts a full path or a date that resolves to `docs/timesheets/{date}.md`.
+
+### Changed — `timesheet`
+- Extraction now explicitly excludes git commit-message recommendations so proposed commit text is never logged as work, even when the user asked for a commit message in the same conversation.
+
+---
+
 ## [1.1.0] — 2026-05-04
 
 ### Changed — `timesheet`

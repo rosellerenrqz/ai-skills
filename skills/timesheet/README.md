@@ -34,9 +34,11 @@ cp -r ai-skills/skills/timesheet .claude/skills/     # project-local
 /timesheet view {date}                     Display all sessions for a date
 /timesheet summary {date}                  Generate an end-of-day summary
 /timesheet auto {date}                     Log + summarize in one step
+/timesheet -time {file}                    Add estimated hours per session + day total (min 8 hrs/day)
+/timesheet -clean {file}                   Remove leaked git commit-recommendation text from a file
 ```
 
-`{date}` accepts any of these formats: `MM-DD-YYYY`, `YYYY-MM-DD`, `MM/DD/YYYY`. Omit it to default to today.
+`{date}` accepts any of these formats: `MM-DD-YYYY`, `YYYY-MM-DD`, `MM/DD/YYYY`. Omit it to default to today. `{file}` for `-time` / `-clean` accepts a full path (e.g. `docs/timesheets/2026-06-30.md`) or a date that resolves to that day's file.
 
 ---
 
@@ -83,6 +85,32 @@ Appends a 3–5 sentence plain-English summary of all sessions to the date file.
 ```
 
 Logs the current session (asks for notes if not provided inline), then immediately generates the summary.
+
+### Add estimated hours
+
+```
+/timesheet -time 06-30-2026
+```
+
+Estimates work time from the complexity of the notes already in the file and writes a per-session estimate plus a day total. The minimum applies to the **day total** — a day always totals at least 8 hours. This is the only command that records time; normal logging stays time-free. It's idempotent: re-run it any time and the estimates are recomputed in place.
+
+Notes are classified into three tiers:
+
+| Tier | Hours | Examples |
+| -------- | ----- | -------- |
+| Light | 1 hr | copy tweaks, config changes, simple display fixes, clearing test data |
+| Standard | 2.5 hrs | adding a feature, schema additions, a fix needing investigation |
+| Heavy | 4 hrs | debugging an elusive bug, integration work, architecture, system-wide analysis |
+
+The tiers are summed per session, floored to 8 hrs for the day, then rounded to the nearest half hour.
+
+### Remove leaked commit messages
+
+```
+/timesheet -clean 06-30-2026
+```
+
+If you asked Claude for a commit message earlier in a conversation and then ran `/timesheet`, the proposed commit text can get swept into the session notes. `-clean` removes that commit-recommendation content — conventional-commit subject lines (`feat(...)`, `fix:`), commit bodies, and `Co-Authored-By` / `Generated with Claude Code` trailers — then renumbers the remaining notes and re-derives the day title. Plain work notes that merely mention committing are kept.
 
 ---
 
@@ -169,4 +197,4 @@ Notes within each session are a numbered list — one item per distinct thing do
 
 ## Version
 
-`1.1.0` — see [CHANGELOG](../../CHANGELOG.md)
+`1.2.0` — see [CHANGELOG](../../CHANGELOG.md)
