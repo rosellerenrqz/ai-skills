@@ -1,6 +1,7 @@
 ---
 name: git-message
-description: Suggest a conventional-commit message (and optionally a branch name) from staged changes — read-only, never runs git. Triggered by /git-message or whenever the user asks for help writing a commit message, naming a commit, wording a commit, or naming a branch for their changes — even if they don't use the word git-message. Examples: "what's a good commit message for this", "write my commit message", "name a branch for these changes".
+description: >-
+  Suggest a conventional-commit message (and optionally a branch name) from staged changes — read-only, never runs git. Triggered by /git-message or whenever the user asks for help writing a commit message, naming a commit, wording a commit, or naming a branch for their changes — even if they don't use the word git-message. Examples — "what's a good commit message for this", "write my commit message", "name a branch for these changes".
 ---
 
 # git-message — Commit Message & Branch Name Suggester
